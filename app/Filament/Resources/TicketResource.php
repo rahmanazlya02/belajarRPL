@@ -20,6 +20,7 @@ use Filament\Resources\Resource;
 use Filament\Resources\Table;
 use Filament\Tables;
 use Illuminate\Support\HtmlString;
+use Illuminate\Database\Eloquent\Builder;
 
 class TicketResource extends Resource
 {
@@ -31,7 +32,7 @@ class TicketResource extends Resource
 
     protected static function getNavigationLabel(): string
     {
-        return __('Tickets');
+        return __('Tasks');
     }
 
     public static function getPluralLabel(): ?string
@@ -83,41 +84,21 @@ class TicketResource extends Resource
                                     )
                                     ->default(fn() => request()->get('project'))
                                     ->required(),
-                                Forms\Components\Select::make('epic_id')
-                                    ->label(__('Epic'))
-                                    ->searchable()
-                                    ->reactive()
-                                    ->options(function ($get, $set) {
-                                        return Epic::where('project_id', $get('project_id'))->pluck('name', 'id')->toArray();
-                                    }),
-                                Forms\Components\Grid::make()
-                                    ->columns(12)
-                                    ->columnSpan(2)
-                                    ->schema([
-                                        Forms\Components\TextInput::make('code')
-                                            ->label(__('Ticket code'))
-                                            ->visible(fn($livewire) => !($livewire instanceof CreateRecord))
-                                            ->columnSpan(2)
-                                            ->disabled(),
-
-                                        Forms\Components\TextInput::make('name')
-                                            ->label(__('Ticket name'))
-                                            ->required()
-                                            ->columnSpan(
-                                                fn($livewire) => !($livewire instanceof CreateRecord) ? 10 : 12
-                                            )
-                                            ->maxLength(255),
-                                    ]),
+                                
+                                Forms\Components\TextInput::make('name')
+                                    ->label(__('Task name'))
+                                    ->required(),
 
                                 Forms\Components\Select::make('owner_id')
-                                    ->label(__('Ticket owner'))
+                                    ->label(__('Task owner'))
                                     ->searchable()
                                     ->options(fn() => User::all()->pluck('name', 'id')->toArray())
                                     ->default(fn() => auth()->user()->id)
                                     ->required(),
 
+
                                 Forms\Components\Select::make('responsible_id')
-                                    ->label(__('Ticket responsible'))
+                                    ->label(__('Task responsible'))
                                     ->searchable()
                                     ->options(fn() => User::all()->pluck('name', 'id')->toArray()),
 
@@ -126,7 +107,7 @@ class TicketResource extends Resource
                                     ->columnSpan(2)
                                     ->schema([
                                         Forms\Components\Select::make('status_id')
-                                            ->label(__('Ticket status'))
+                                            ->label(__('Task status'))
                                             ->searchable()
                                             ->options(function ($get) {
                                                 $project = Project::where('id', $get('project_id'))->first();
@@ -159,14 +140,14 @@ class TicketResource extends Resource
                                             ->required(),
 
                                         Forms\Components\Select::make('type_id')
-                                            ->label(__('Ticket type'))
+                                            ->label(__('Task type'))
                                             ->searchable()
                                             ->options(fn() => TicketType::all()->pluck('name', 'id')->toArray())
                                             ->default(fn() => TicketType::where('is_default', true)->first()?->id)
                                             ->required(),
 
                                         Forms\Components\Select::make('priority_id')
-                                            ->label(__('Ticket priority'))
+                                            ->label(__('Task priority'))
                                             ->searchable()
                                             ->options(fn() => TicketPriority::all()->pluck('name', 'id')->toArray())
                                             ->default(fn() => TicketPriority::where('is_default', true)->first()?->id)
@@ -175,61 +156,20 @@ class TicketResource extends Resource
                             ]),
 
                         Forms\Components\RichEditor::make('content')
-                            ->label(__('Ticket content'))
+                            ->label(__('Task Description'))
                             ->required()
                             ->columnSpan(2),
+                        
+                    Forms\Components\Grid::make()
+                        ->columns(3)
+                        ->columnSpan(2)
+                        ->schema([
+                            Forms\Components\DatePicker::make('deadline')
 
-                        Forms\Components\Grid::make()
-                            ->columnSpan(2)
-                            ->columns(12)
-                            ->schema([
-                                Forms\Components\TextInput::make('estimation')
-                                    ->label(__('Estimation time'))
-                                    ->numeric()
-                                    ->columnSpan(2),
-                            ]),
-
-                        Forms\Components\Repeater::make('relations')
-                            ->itemLabel(function (array $state) {
-                                $ticketRelation = TicketRelation::find($state['id'] ?? 0);
-                                if ($ticketRelation) {
-                                    return __(config('system.tickets.relations.list.' . $ticketRelation->type))
-                                        . ' '
-                                        . $ticketRelation->relation->name
-                                        . ' (' . $ticketRelation->relation->code . ')';
-                                }
-                                return null;
-                            })
-                            ->relationship()
-                            ->collapsible()
-                            ->collapsed()
-                            ->orderable()
-                            ->defaultItems(0)
-                            ->schema([
-                                Forms\Components\Grid::make()
-                                    ->columns(3)
-                                    ->schema([
-                                        Forms\Components\Select::make('type')
-                                            ->label(__('Relation type'))
-                                            ->required()
-                                            ->searchable()
-                                            ->options(config('system.tickets.relations.list'))
-                                            ->default(fn() => config('system.tickets.relations.default')),
-
-                                        Forms\Components\Select::make('relation_id')
-                                            ->label(__('Related ticket'))
-                                            ->required()
-                                            ->searchable()
-                                            ->columnSpan(2)
-                                            ->options(function ($livewire) {
-                                                $query = Ticket::query();
-                                                if ($livewire instanceof EditRecord && $livewire->record) {
-                                                    $query->where('id', '<>', $livewire->record->id);
-                                                }
-                                                return $query->get()->pluck('name', 'id')->toArray();
-                                            }),
-                                    ]),
-                            ]),
+                            ->label(__('Deadline'))
+                            ->required()
+                            ->reactive(),
+                        ]),
                     ]),
             ]);
     }
@@ -245,7 +185,7 @@ class TicketResource extends Resource
         }
         $columns = array_merge($columns, [
             Tables\Columns\TextColumn::make('name')
-                ->label(__('Ticket name'))
+                ->label(__('Task name'))
                 ->sortable()
                 ->searchable(),
 
@@ -290,6 +230,12 @@ class TicketResource extends Resource
                                 <span>' . $record->priority->name . '</span>
                             </div>
                         '))
+                ->sortable()
+                ->searchable(),
+
+            Tables\Columns\TextColumn::make('deadline')
+                ->label(__('Deadline'))
+                ->date() // Format sebagai tanggal
                 ->sortable()
                 ->searchable(),
 
@@ -339,6 +285,11 @@ class TicketResource extends Resource
                     ->label(__('Priority'))
                     ->multiple()
                     ->options(fn() => TicketPriority::all()->pluck('name', 'id')->toArray()),
+
+                Tables\Filters\SelectFilter::make('deadline')
+                    ->label('Deadline')
+                    ->multiple()
+                    ->options(fn() => Ticket::all()->pluck('deadline')->toArray()),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
