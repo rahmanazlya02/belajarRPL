@@ -165,11 +165,12 @@ class TicketResource extends Resource
                             ->columns(3)
                             ->columnSpan(2)
                             ->schema([
-                                Forms\Components\DatePicker::make('deadline')
-
+                                Forms\Components\DateTimePicker::make('deadline')
                                     ->label(__('Deadline'))
                                     ->required()
-                                    ->reactive(),
+                                    ->reactive()
+                                    ->minDate(now()->format('Y-m-d'))  // Today's date as the minimum date
+                                    ->default(now()->setTime(0,0))  
                             ]),
                     ]),
             ]);
@@ -236,7 +237,7 @@ class TicketResource extends Resource
 
             Tables\Columns\TextColumn::make('deadline')
                 ->label(__('Deadline'))
-                ->date() // Format sebagai tanggal
+                ->dateTime() // Format sebagai tanggal
                 ->sortable()
                 ->searchable(),
 
