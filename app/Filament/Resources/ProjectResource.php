@@ -52,13 +52,6 @@ class ProjectResource extends Resource
                         Forms\Components\Grid::make()
                             ->columns(3)
                             ->schema([
-                                Forms\Components\SpatieMediaLibraryFileUpload::make('cover')
-                                    ->label(__('Cover image'))
-                                    ->image()
-                                    ->helperText(
-                                        __('If not selected, an image will be generated based on the project name')
-                                    )
-                                    ->columnSpan(1),
 
                                 Forms\Components\Grid::make()
                                     ->columnSpan(2)
@@ -72,16 +65,6 @@ class ProjectResource extends Resource
                                                     ->required()
                                                     ->columnSpan(10)
                                                     ->maxLength(255),
-
-                                                Forms\Components\TextInput::make('ticket_prefix')
-                                                    ->label(__('Ticket prefix'))
-                                                    ->maxLength(3)
-                                                    ->columnSpan(2)
-                                                    ->unique(Project::class, column: 'ticket_prefix', ignoreRecord: true)
-                                                    ->disabled(
-                                                        fn($record) => $record && $record->tickets()->count() != 0
-                                                    )
-                                                    ->required()
                                             ]),
 
                                         Forms\Components\Select::make('owner_id')
@@ -102,39 +85,6 @@ class ProjectResource extends Resource
                                 Forms\Components\RichEditor::make('description')
                                     ->label(__('Project description'))
                                     ->columnSpan(3),
-
-                                Forms\Components\Select::make('type')
-                                    ->label(__('Project type'))
-                                    ->searchable()
-                                    ->options([
-                                        'kanban' => __('Kanban'),
-                                        'scrum' => __('Scrum')
-                                    ])
-                                    ->reactive()
-                                    ->default(fn() => 'kanban')
-                                    ->helperText(function ($state) {
-                                        if ($state === 'kanban') {
-                                            return __('Display and move your project forward with issues on a powerful board.');
-                                        } elseif ($state === 'scrum') {
-                                            return __('Achieve your project goals with a board, backlog, and roadmap.');
-                                        }
-                                        return '';
-                                    })
-                                    ->required(),
-
-                                Forms\Components\Select::make('status_type')
-                                    ->label(__('Statuses configuration'))
-                                    ->helperText(
-                                        __('If custom type selected, you need to configure project specific statuses')
-                                    )
-                                    ->searchable()
-                                    ->options([
-                                        'default' => __('Default'),
-                                        'custom' => __('Custom configuration')
-                                    ])
-                                    ->default(fn() => 'default')
-                                    ->disabled(fn($record) => $record && $record->tickets()->count())
-                                    ->required(),
                             ]),
                     ]),
             ]);
@@ -144,13 +94,6 @@ class ProjectResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('cover')
-                    ->label(__('Cover image'))
-                    ->formatStateUsing(fn($state) => new HtmlString('
-                            <div style=\'background-image: url("' . $state . '")\'
-                                 class="w-8 h-8 bg-cover bg-center bg-no-repeat"></div>
-                        ')),
-
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('Project name'))
                     ->sortable()
@@ -177,16 +120,6 @@ class ProjectResource extends Resource
                     ->label(__('Affected users'))
                     ->limit(2),
 
-                Tables\Columns\BadgeColumn::make('type')
-                    ->enum([
-                        'kanban' => __('Kanban'),
-                        'scrum' => __('Scrum')
-                    ])
-                    ->colors([
-                        'secondary' => 'kanban',
-                        'warning' => 'scrum',
-                    ]),
-
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created at'))
                     ->dateTime()
@@ -205,27 +138,6 @@ class ProjectResource extends Resource
                     ->options(fn() => ProjectStatus::all()->pluck('name', 'id')->toArray()),
             ])
             ->actions([
-
-                Tables\Actions\Action::make('favorite')
-                    ->label('')
-                    ->icon('heroicon-o-star')
-                    ->color(fn($record) => auth()->user()->favoriteProjects()
-                        ->where('projects.id', $record->id)->count() ? 'success' : 'default')
-                    ->action(function ($record) {
-                        $projectId = $record->id;
-                        $projectFavorite = ProjectFavorite::where('project_id', $projectId)
-                            ->where('user_id', auth()->user()->id)
-                            ->first();
-                        if ($projectFavorite) {
-                            $projectFavorite->delete();
-                        } else {
-                            ProjectFavorite::create([
-                                'project_id' => $projectId,
-                                'user_id' => auth()->user()->id
-                            ]);
-                        }
-                        Filament::notify('success', __('Project updated'));
-                    }),
 
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),

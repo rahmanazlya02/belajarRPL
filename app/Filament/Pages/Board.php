@@ -25,7 +25,7 @@ class Board extends Page implements HasForms
 
     protected function getSubheading(): string|Htmlable|null
     {
-        return __("In this section you can choose one of your projects to show it's Scrum or Kanban board");
+        return __("Pilih project yang ingin ditampilkan pada kanban board");
     }
 
     public function mount(): void
@@ -52,7 +52,7 @@ class Board extends Page implements HasForms
                         ->columns(1)
                         ->schema([
                             Select::make('project')
-                                ->label(__('Project'))
+                                ->label(__('Proyek'))
                                 ->required()
                                 ->searchable()
                                 ->reactive()
