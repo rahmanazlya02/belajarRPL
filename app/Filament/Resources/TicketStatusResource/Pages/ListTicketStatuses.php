@@ -10,11 +10,11 @@ use Illuminate\Database\Eloquent\Builder;
 class ListTicketStatuses extends ListRecords
 {
     protected static string $resource = TicketStatusResource::class;
-
+    
     protected function getActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()->label('New Task Status'),
         ];
     }
 
