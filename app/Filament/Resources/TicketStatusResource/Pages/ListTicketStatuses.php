@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 class ListTicketStatuses extends ListRecords
 {
     protected static string $resource = TicketStatusResource::class;
-    
+
     protected function getActions(): array
     {
         return [

@@ -86,8 +86,8 @@ class ProjectResource extends Resource
 
                                 Forms\Components\RichEditor::make('description')
                                     ->label(__('Project description'))
-                                    ->columnSpan(3)
-                                    ->required(),
+                                    ->required()
+                                    ->columnSpan(3),
 
                                 Forms\Components\Grid::make()
                                 ->columns(3)
